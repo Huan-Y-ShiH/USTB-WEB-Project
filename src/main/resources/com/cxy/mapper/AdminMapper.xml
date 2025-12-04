@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--   使用mapper接口
+  namespace : 与mapper接口同包同名
+ -->
+<mapper namespace="com.cxy.mapper.AdminMapper">
+    <!--  根据编号查询员工信息
+        如果参数仅有一个,则#{名}参数名没有要求
+     -->
+    <select id="selectAdminByName" resultType="com.cxy.pojo.Admins">
+        select * from admins
+        where username =#{username}
+    </select>
+</mapper>

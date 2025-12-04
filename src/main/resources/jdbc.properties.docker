@@ -1,0 +1,6 @@
+# Docker环境数据库配置
+jdbc.driverClassName=org.opengauss.Driver
+jdbc.url=jdbc:opengauss://opengauss:5432/hospital?useSSL=false&characterEncoding=utf-8
+jdbc.username=gaussdb
+jdbc.password=Gauss@123
+

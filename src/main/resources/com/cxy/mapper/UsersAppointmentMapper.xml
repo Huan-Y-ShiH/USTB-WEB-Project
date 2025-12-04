@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--   使用mapper接口
+  namespace : 与mapper接口同包同名
+ -->
+<mapper namespace="com.cxy.mapper.UsersAppointmentMapper">
+    <!--  根据编号查询员工信息
+        如果参数仅有一个,则#{名}参数名没有要求
+     -->
+    <resultMap id="appointmentMap" type="com.cxy.pojo.Appointments" autoMapping="true">
+        <id property="appointmentId" column="appointment_id"/>
+        <result property="patientId" column="patient_id"/>
+        <result property="doctorId" column="doctor_id"/>
+        <result property="appointmentDate" column="appointment_date"/>
+        <result property="status" column="status"/>
+        <association property="doctor" javaType="com.cxy.pojo.Doctors">
+            <id property="doctorId" column="doctor_id"/>
+            <result property="name" column="doctor_name"/>
+            <result property="phone" column="doctor_phone"/>
+            <result property="professionalTitleId" column="professional_title_id"/>
+        </association>
+        <association property="department" javaType="com.cxy.pojo.Departments">
+            <id property="departmentId" column="department_id"/>
+            <result property="departmentName" column="department_name"/>
+        </association>
+        <association property="patient" javaType="com.cxy.pojo.Patients">
+            <id property="patientId" column="patient_id"/>
+            <result property="pname" column="patient_name"/>
+            <result property="phone" column="patient_phone"/>
+            <result property="idCardNumber" column="id_card_number"/>
+        </association>
+    </resultMap>
+
+    <!-- 查询我的门诊预约 -->
+    <select id="selectMyAppointments" resultMap="appointmentMap">
+        SELECT 
+            a.*,
+            d.name as doctor_name,
+            d.phone as doctor_phone,
+            d.professional_title_id,
+            dept.department_id,
+            dept.department_name,
+            p.pname as patient_name,
+            p.phone as patient_phone,
+            p.id_card_number
+        FROM appointments a
+        LEFT JOIN doctors d ON a.doctor_id = d.doctor_id
+        LEFT JOIN departments dept ON d.department_id = dept.department_id
+        LEFT JOIN patients p ON a.patient_id = p.patient_id
+        WHERE a.patient_id = #{patientId}
+        ORDER BY a.appointment_date DESC, a.appointment_id DESC
+    </select>
+
+    <!-- 取消预约 -->
+    <update id="cancelAppointment">
+        update appointments set status = 'cancelled' where appointment_id = #{appointmentId}
+    </update>
+    
+    <!-- 搜索预约的SQL片段 -->
+    <sql id="searchAppointmentWhere">
+        <where>
+            a.patient_id = #{patientId}
+            <if test="startDate != null and startDate != ''">
+                AND a.appointment_date >= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND a.appointment_date &lt;= #{endDate}
+            </if>
+            <if test="status != null and status != ''">
+                AND a.status = #{status}
+            </if>
+            <if test="doctorName != null and doctorName != ''">
+                AND d.name LIKE CONCAT('%', #{doctorName}, '%')
+            </if>
+            <if test="departmentName != null and departmentName != ''">
+                AND dept.department_name LIKE CONCAT('%', #{departmentName}, '%')
+            </if>
+        </where>
+    </sql>
+    
+    <!-- 搜索预约（支持条件查询和分页） -->
+    <select id="searchAppointments" resultMap="appointmentMap">
+        SELECT 
+            a.*,
+            d.name as doctor_name,
+            d.phone as doctor_phone,
+            d.professional_title_id,
+            dept.department_id,
+            dept.department_name,
+            p.pname as patient_name,
+            p.phone as patient_phone,
+            p.id_card_number
+        FROM appointments a
+        LEFT JOIN doctors d ON a.doctor_id = d.doctor_id
+        LEFT JOIN departments dept ON d.department_id = dept.department_id
+        LEFT JOIN patients p ON a.patient_id = p.patient_id
+        <include refid="searchAppointmentWhere"/>
+        ORDER BY a.appointment_date DESC, a.appointment_id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+    
+    <!-- 获取预约总数 -->
+    <select id="getAppointmentCount" resultType="int">
+        SELECT COUNT(*)
+        FROM appointments a
+        LEFT JOIN doctors d ON a.doctor_id = d.doctor_id
+        LEFT JOIN departments dept ON d.department_id = dept.department_id
+        <include refid="searchAppointmentWhere"/>
+    </select>
+    
+    <!-- 获取预约详情 -->
+    <select id="getAppointmentDetail" resultMap="appointmentMap">
+        SELECT 
+            a.*,
+            d.name as doctor_name,
+            d.phone as doctor_phone,
+            d.professional_title_id,
+            dept.department_id,
+            dept.department_name,
+            p.pname as patient_name,
+            p.phone as patient_phone,
+            p.id_card_number
+        FROM appointments a
+        LEFT JOIN doctors d ON a.doctor_id = d.doctor_id
+        LEFT JOIN departments dept ON d.department_id = dept.department_id
+        LEFT JOIN patients p ON a.patient_id = p.patient_id
+        WHERE a.appointment_id = #{appointmentId} AND a.patient_id = #{patientId}
+    </select>
+
+    <!-- 添加预约 -->
+    <insert id="addAppointment">
+        INSERT INTO appointments (patient_id, doctor_id, appointment_date, appointment_time, status, createtime)
+        VALUES (#{patientId}, #{doctorId}, #{appointmentDate}, #{appointmentTime}, 'booked', NOW())
+    </insert>
+    
+    <!-- 检查是否已存在预约 -->
+    <select id="checkExistingAppointment" resultType="int">
+        SELECT COUNT(*)
+        FROM appointments
+        WHERE patient_id = #{patientId} 
+        AND doctor_id = #{doctorId} 
+        AND appointment_date = #{appointmentDate} 
+        AND appointment_time = #{appointmentTime}
+        AND status != 'cancelled'
+    </select>
+
+    <!-- 删除预约（物理删除） -->
+    <delete id="deleteAppointment">
+        DELETE FROM appointments
+        WHERE appointment_id = #{appointmentId} AND patient_id = #{patientId}
+    </delete>
+    
+    <!-- 获取预约信息（用于删除时获取医生和时段信息） -->
+    <select id="getAppointmentForDelete" resultMap="appointmentMap">
+        SELECT 
+            a.*,
+            d.name as doctor_name,
+            d.phone as doctor_phone,
+            d.professional_title_id,
+            dept.department_id,
+            dept.department_name,
+            p.pname as patient_name,
+            p.phone as patient_phone,
+            p.id_card_number
+        FROM appointments a
+        LEFT JOIN doctors d ON a.doctor_id = d.doctor_id
+        LEFT JOIN departments dept ON d.department_id = dept.department_id
+        LEFT JOIN patients p ON a.patient_id = p.patient_id
+        WHERE a.appointment_id = #{appointmentId} AND a.patient_id = #{patientId}
+    </select>
+
+</mapper>

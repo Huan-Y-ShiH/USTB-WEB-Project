@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--   使用mapper接口
+  namespace : 与mapper接口同包同名
+ -->
+<mapper namespace="com.cxy.mapper.ProfessionalTitlesMapper">
+    <!--  根据编号查询员工信息
+        如果参数仅有一个,则#{名}参数名没有要求
+     -->
+    <select id="selectAll" resultType="com.cxy.pojo.ProfessionalTitles">
+        select * from professional_titles
+    </select>
+
+    <insert id="addProfession" keyProperty="id" useGeneratedKeys="true">
+        insert into professional_titles(title_name,description)
+        values(#{titleName},#{description})
+    </insert>
+
+    <delete id="deleteProfession" parameterType="String">
+        delete from professional_titles where title_name =#{titleName}
+    </delete>
+
+    <update id="updateProfession" parameterType="com.cxy.pojo.ProfessionalTitles">
+        update professional_titles set description = #{description} where title_name =#{titleName}
+    </update>
+
+    <select id="searchProfession" resultType="com.cxy.pojo.ProfessionalTitles">
+        SELECT * FROM professional_titles WHERE title_name = #{titleName}
+    </select>
+
+</mapper>

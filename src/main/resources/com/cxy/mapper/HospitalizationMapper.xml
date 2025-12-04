@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cxy.mapper.HospitalizationMapper">
+
+    <!-- resultMap 定义查询结果 -->
+    <resultMap id="hospitalizationMap" type="com.cxy.pojo.Hospitalization" autoMapping="true">
+        <id property="hospitalizationId" column="hospitalization_id"/>
+        <result property="patientId" column="patient_id"/>
+        <result property="roomNumber" column="room_number"/>
+        <result property="cost" column="cost"/>
+        <result property="paymentStatus" column="payment_status"/>
+        <result property="isInsured" column="is_insured"/>
+        <result property="hospitalizationStatus" column="hospitalization_status"/>
+        
+        <!-- 关联患者信息 -->
+        <association property="patient" javaType="com.cxy.pojo.Patients">
+            <id property="patientId" column="patient_id"/>
+            <result property="pname" column="patient_name"/>
+            <result property="phone" column="patient_phone"/>
+            <result property="idCardNumber" column="patient_id_card"/>
+        </association>
+    </resultMap>
+
+    <!-- 根据患者ID查询住院记录 -->
+    <select id="selectHospitalizationsByPatientId" resultMap="hospitalizationMap">
+        select h.*, 
+               p.pname as patient_name, p.phone as patient_phone, p.id_card_number as patient_id_card
+        from hospitalization h 
+        left join patients p on h.patient_id = p.patient_id
+        where h.patient_id = #{patientId}
+        order by h.hospitalization_id desc
+    </select>
+
+    <!-- 根据住院ID查询住院记录详情 -->
+    <select id="selectHospitalizationById" resultMap="hospitalizationMap">
+        select h.*, 
+               p.pname as patient_name, p.phone as patient_phone, p.id_card_number as patient_id_card
+        from hospitalization h 
+        left join patients p on h.patient_id = p.patient_id
+        where h.hospitalization_id = #{hospitalizationId}
+    </select>
+
+    <!-- 添加住院记录 -->
+    <insert id="insertHospitalization" parameterType="com.cxy.pojo.Hospitalization">
+        insert into hospitalization 
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="hospitalizationId != null">hospitalization_id,</if>
+            patient_id,
+            room_number,
+            cost,
+            payment_status,
+            is_insured,
+            hospitalization_status,
+        </trim>
+        values 
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="hospitalizationId != null">#{hospitalizationId},</if>
+            #{patientId},
+            #{roomNumber},
+            #{cost},
+            #{paymentStatus},
+            #{isInsured},
+            #{hospitalizationStatus},
+        </trim>
+    </insert>
+
+    <!-- 更新住院记录 -->
+    <update id="updateHospitalization" parameterType="com.cxy.pojo.Hospitalization">
+        update hospitalization 
+        set room_number = #{roomNumber},
+            cost = #{cost},
+            payment_status = #{paymentStatus},
+            is_insured = #{isInsured},
+            hospitalization_status = #{hospitalizationStatus}
+        where hospitalization_id = #{hospitalizationId}
+    </update>
+
+    <!-- 删除住院记录 -->
+    <delete id="deleteHospitalization">
+        delete from hospitalization where hospitalization_id = #{hospitalizationId}
+    </delete>
+
+    <!-- 获取当前最大的住院记录ID -->
+    <select id="getMaxHospitalizationId" resultType="java.lang.Integer">
+        select COALESCE(MAX(hospitalization_id), 0) from hospitalization
+    </select>
+
+    <!-- 根据医生ID查询其负责的住院记录 -->
+    <select id="selectHospitalizationsByDoctorId" resultMap="hospitalizationMap">
+        select h.*, 
+               p.pname as patient_name, p.phone as patient_phone, p.id_card_number as patient_id_card
+        from hospitalization h 
+        left join patients p on h.patient_id = p.patient_id
+        inner join consultation c on h.patient_id = c.patient_id
+        where c.doctor_id = #{doctorId}
+        group by h.hospitalization_id
+        order by h.hospitalization_id desc
+    </select>
+
+    <!-- 根据住院状态查询记录 -->
+    <select id="selectHospitalizationsByStatus" resultMap="hospitalizationMap">
+        select h.*, 
+               p.pname as patient_name, p.phone as patient_phone, p.id_card_number as patient_id_card
+        from hospitalization h 
+        left join patients p on h.patient_id = p.patient_id
+        where h.hospitalization_status = #{status}
+        order by h.hospitalization_id desc
+    </select>
+
+</mapper> 

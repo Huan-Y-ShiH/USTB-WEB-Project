@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--   使用mapper接口
+  namespace : 与mapper接口同包同名
+ -->
+<mapper namespace="com.cxy.mapper.DoctorScheduleMapper">
+
+    <!--resultMap 定义查询结果-->
+    <resultMap id="scheduleMap" type="com.cxy.pojo.DoctorSchedule" autoMapping="true">
+        <!--    关联查询医生信息-->
+        <association property="doctor" javaType="com.cxy.pojo.Doctors" autoMapping="true">
+            <id property="doctorId" column="d_doctor_id"/>
+            <result property="name" column="d_name"/>
+            <result property="jobNumber" column="d_job_number"/>
+            <result property="phone" column="d_phone"/>
+            <result property="email" column="d_email"/>
+        </association>
+        <!--    关联查询科室信息-->
+        <association property="department" javaType="com.cxy.pojo.Departments" autoMapping="true">
+            <id property="departmentId" column="dept_department_id"/>
+            <result property="departmentName" column="dept_department_name"/>
+        </association>
+    </resultMap>
+
+    <!-- 查询科室排班信息 -->
+    <select id="selectScheduleByDepartment" resultMap="scheduleMap">
+        select ds.*, 
+               d.doctor_id as d_doctor_id, d.name as d_name, d.job_number as d_job_number, 
+               d.phone as d_phone, d.email as d_email,
+               dept.department_id as dept_department_id, dept.department_name as dept_department_name
+        from doctor_schedule ds 
+        left join doctors d on ds.doctor_id = d.doctor_id
+        left join departments dept on ds.department_id = dept.department_id
+        where ds.department_id = #{departmentId}
+        <if test="startDate != null">
+            and ds.date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            and ds.date &lt;= #{endDate}
+        </if>
+        order by ds.date, ds.shift_time, d.name
+    </select>
+
+    <!-- 查询医生个人排班信息 -->
+    <select id="selectScheduleByDoctor" resultMap="scheduleMap">
+        select ds.*, 
+               d.doctor_id as d_doctor_id, d.name as d_name, d.job_number as d_job_number, 
+               d.phone as d_phone, d.email as d_email,
+               dept.department_id as dept_department_id, dept.department_name as dept_department_name
+        from doctor_schedule ds 
+        left join doctors d on ds.doctor_id = d.doctor_id
+        left join departments dept on ds.department_id = dept.department_id
+        where ds.doctor_id = #{doctorId}
+        <if test="startDate != null">
+            and ds.date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            and ds.date &lt;= #{endDate}
+        </if>
+        order by ds.date, ds.shift_time
+    </select>
+
+    <!-- 查询科室在指定日期的排班 -->
+    <select id="selectScheduleByDepartmentAndDate" resultMap="scheduleMap">
+        select ds.*, 
+               d.doctor_id as d_doctor_id, d.name as d_name, d.job_number as d_job_number, 
+               d.phone as d_phone, d.email as d_email,
+               dept.department_id as dept_department_id, dept.department_name as dept_department_name
+        from doctor_schedule ds 
+        left join doctors d on ds.doctor_id = d.doctor_id
+        left join departments dept on ds.department_id = dept.department_id
+        where ds.department_id = #{departmentId} and ds.date = #{date}
+        order by ds.shift_time, d.name
+    </select>
+
+</mapper> 

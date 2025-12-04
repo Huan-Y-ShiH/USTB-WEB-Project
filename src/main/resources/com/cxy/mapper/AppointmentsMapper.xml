@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 使用mapper接口
+  namespace : 与mapper接口同包同名
+-->
+<mapper namespace="com.cxy.mapper.AppointmentsMapper">
+
+    <!--resultMap 定义查询结果-->
+    <resultMap id="appointmentMap" type="com.cxy.pojo.Appointments" autoMapping="true">
+        <!--关联查询患者信息-->
+        <association property="patient" javaType="com.cxy.pojo.Patients" autoMapping="true"/>
+        <!--关联查询医生信息-->
+        <association property="doctor" javaType="com.cxy.pojo.Doctors" autoMapping="true"/>
+        <!--关联查询科室信息-->
+        <association property="department" javaType="com.cxy.pojo.Departments" autoMapping="true"/>
+    </resultMap>
+
+    <!-- 查询所有预约信息 -->
+    <select id="selectAllAppointments" resultMap="appointmentMap">
+        select a.*,
+            p.pname, p.phone as patient_phone, p.id_card_number,
+            d.doctor_id, d.name , d.phone ,
+            dept.department_name
+        from appointments a 
+        left join patients p on a.patient_id = p.patient_id
+        left join doctors d on a.doctor_id = d.doctor_id
+        left join departments dept on d.department_id = dept.department_id
+        <where>
+            <if test="patientName != null and patientName != ''">
+                and p.pname like concat('%', #{patientName}, '%')
+            </if>
+            <if test="doctorName != null and doctorName != ''">
+                and d.name like concat('%', #{doctorName}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                and a.status = #{status}
+            </if>
+            <if test="appointmentDate != null">
+                and date(a.appointment_date) = date(#{appointmentDate})
+            </if>
+        </where>
+        order by a.appointment_date desc, a.createtime desc
+    </select>
+
+    <!-- 添加预约 -->
+    <insert id="insertAppointment" parameterType="com.cxy.pojo.Appointments">
+        insert into appointments (patient_id, doctor_id, appointment_date, appointment_time, status, createtime)
+        values (#{patientId}, #{doctorId}, #{appointmentDate}, #{appointmentTime}, #{status}, #{createtime})
+    </insert>
+
+    <!-- 更新预约状态 -->
+    <update id="updateAppointmentStatus">
+        update appointments 
+        set status = #{status}
+        where appointment_id = #{appointmentId}
+    </update>
+
+    <!-- 根据ID查询预约详情 -->
+    <select id="selectAppointmentById" resultMap="appointmentMap">
+        select a.*, 
+               p.pname, p.phone as patient_phone, p.id_card_number,
+               d.name, d.job_number, d.phone ,
+               dept.department_name
+        from appointments a 
+        left join patients p on a.patient_id = p.patient_id
+        left join doctors d on a.doctor_id = d.doctor_id
+        left join departments dept on d.department_id = dept.department_id
+        where a.appointment_id = #{appointmentId}
+    </select>
+
+    <!-- 查询指定医生和日期时间的预约数量 -->
+    <select id="countAppointmentsByDoctorAndDateTime" resultType="int">
+        select count(*)
+        from appointments
+        where doctor_id = #{doctorId}
+          and date(appointment_date) = date(#{appointmentDate})
+          and appointment_time = #{appointmentTime}
+          and status != 'cancelled'
+    </select>
+
+    <!-- 查询指定医生的预约信息 -->
+    <select id="selectAppointmentsByDoctorId" resultMap="appointmentMap">
+        select a.*, 
+               p.pname, p.phone as patient_phone, p.id_card_number,
+               d.name, d.job_number, d.phone,
+               dept.department_name
+        from appointments a 
+        left join patients p on a.patient_id = p.patient_id
+        left join doctors d on a.doctor_id = d.doctor_id
+        left join departments dept on d.department_id = dept.department_id
+        where a.doctor_id = #{doctorId}
+        <if test="status != null and status != ''">
+            and a.status = #{status}
+        </if>
+        order by a.appointment_date desc, a.createtime desc
+    </select>
+
+    <!-- 删除预约 -->
+    <delete id="deleteAppointment">
+        delete from appointments
+        where appointment_id = #{appointmentId}
+    </delete>
+
+</mapper> 

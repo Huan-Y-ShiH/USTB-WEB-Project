@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 使用mapper接口
+  namespace : 与mapper接口同包同名
+-->
+<mapper namespace="com.cxy.mapper.PatientsMapper">
+
+    <!--resultMap 定义查询结果-->
+    <resultMap id="patientMap" type="com.cxy.pojo.Patients" autoMapping="true">
+        <id property="patientId" column="patient_id"/>
+        <result property="idCardNumber" column="id_card_number"/>
+        <result property="pname" column="pname"/>
+        <result property="avatar" column="avatar"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="balance" column="balance"/>
+    </resultMap>
+
+    <!-- 按条件查询患者信息 -->
+    <select id="selectPatientAll" resultMap="patientMap">
+        select * from patients
+        <where>
+            <if test="patientName != null and patientName != ''">
+                pname like concat('%', #{patientName}, '%')
+            </if>
+            <if test="idCardNumber != null and idCardNumber != ''">
+                and id_card_number like concat('%', #{idCardNumber}, '%')
+            </if>
+            <if test="phone != null and phone != ''">
+                and phone like concat('%', #{phone}, '%')
+            </if>
+            <if test="minBalance != null">
+                and balance >= #{minBalance}
+            </if>
+            <if test="maxBalance != null">
+                and balance &lt;= #{maxBalance}
+            </if>
+        </where>
+        order by patient_id desc
+    </select>
+
+    <!-- 根据患者ID查询患者详情 -->
+    <select id="selectPatientById" resultMap="patientMap">
+        select * from patients where patient_id = #{patientId}
+    </select>
+
+    <!-- 根据身份证号查询患者 -->
+    <select id="selectPatientByIdCard" resultMap="patientMap">
+        select * from patients where id_card_number = #{idCardNumber}
+    </select>
+
+    <!-- 根据手机号查询患者 -->
+    <select id="selectPatientByPhone" resultMap="patientMap">
+        select * from patients where phone = #{phone}
+    </select>
+
+    <!-- 查询医生的患者（基于就诊记录） -->
+    <select id="selectPatientsByDoctor" resultMap="patientMap">
+        select distinct p.* from patients p
+        inner join consultation c on p.patient_id = c.patient_id
+        where c.doctor_id = #{doctorId}
+        <if test="searchVo != null">
+            <if test="searchVo.patientName != null and searchVo.patientName != ''">
+                and p.pname like concat('%', #{searchVo.patientName}, '%')
+            </if>
+            <if test="searchVo.idCardNumber != null and searchVo.idCardNumber != ''">
+                and p.id_card_number like concat('%', #{searchVo.idCardNumber}, '%')
+            </if>
+            <if test="searchVo.phone != null and searchVo.phone != ''">
+                and p.phone like concat('%', #{searchVo.phone}, '%')
+            </if>
+        </if>
+        order by c.consultation_date desc
+    </select>
+
+    <!-- 查询科室的患者（基于就诊记录） -->
+    <select id="selectPatientsByDepartment" resultMap="patientMap">
+        select distinct p.* from patients p
+        inner join consultation c on p.patient_id = c.patient_id
+        where c.department_id = #{departmentId}
+        <if test="searchVo != null">
+            <if test="searchVo.patientName != null and searchVo.patientName != ''">
+                and p.pname like concat('%', #{searchVo.patientName}, '%')
+            </if>
+            <if test="searchVo.idCardNumber != null and searchVo.idCardNumber != ''">
+                and p.id_card_number like concat('%', #{searchVo.idCardNumber}, '%')
+            </if>
+            <if test="searchVo.phone != null and searchVo.phone != ''">
+                and p.phone like concat('%', #{searchVo.phone}, '%')
+            </if>
+        </if>
+        order by c.consultation_date desc
+    </select>
+
+    <!-- 统计患者总数 -->
+    <select id="countPatients" resultType="int">
+        select count(*) from patients
+        <where>
+            <if test="patientName != null and patientName != ''">
+                pname like concat('%', #{patientName}, '%')
+            </if>
+            <if test="idCardNumber != null and idCardNumber != ''">
+                and id_card_number like concat('%', #{idCardNumber}, '%')
+            </if>
+            <if test="phone != null and phone != ''">
+                and phone like concat('%', #{phone}, '%')
+            </if>
+            <if test="minBalance != null">
+                and balance >= #{minBalance}
+            </if>
+            <if test="maxBalance != null">
+                and balance &lt;= #{maxBalance}
+            </if>
+        </where>
+    </select>
+
+    <!-- 统计医生的患者数 -->
+    <select id="countPatientsByDoctor" resultType="int">
+        select count(distinct p.patient_id) from patients p
+        inner join consultation c on p.patient_id = c.patient_id
+        where c.doctor_id = #{doctorId}
+    </select>
+
+    <!-- 根据ID查询患者信息 -->
+    <select id="getPatientById" resultMap="patientMap">
+        select * from patients where patient_id = #{patientId}
+    </select>
+
+    <!-- 修改患者个人信息 -->
+    <update id="updatePatientInfo" parameterType="com.cxy.pojo.Patients">
+        update patients
+        set pname = #{pname}, phone = #{phone}, email = #{email}
+        where patient_id = #{patientId}
+    </update>
+
+    <!-- 用户登录（通过手机号和密码） -->
+    <select id="selectByPhoneAndPassword" resultMap="patientMap">
+        select * from patients where phone = #{phone} and password = #{password}
+    </select>
+
+    <!-- 用户注册 -->
+    <insert id="insertPatient" parameterType="com.cxy.pojo.Patients" useGeneratedKeys="true" keyProperty="patientId">
+        insert into patients (id_card_number, password, pname, avatar, phone, email, balance, registration_date)
+        values (#{idCardNumber}, #{password}, #{pname}, #{avatar}, #{phone}, #{email}, #{balance}, #{registrationDate})
+    </insert>
+
+    <!-- 修改患者密码 -->
+    <update id="updatePassword">
+        update patients set password = #{newPassword} where patient_id = #{patientId}
+    </update>
+
+</mapper> 

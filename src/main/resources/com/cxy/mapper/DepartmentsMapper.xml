@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--   使用mapper接口
+  namespace : 与mapper接口同包同名
+ -->
+<mapper namespace="com.cxy.mapper.DepartmentsMapper">
+    <!--  根据编号查询员工信息
+        如果参数仅有一个,则#{名}参数名没有要求
+     -->
+    <select id="selectDepartmentsByLevel" resultType="com.cxy.pojo.Departments">
+        select * from departments
+        where department_level =#{departmentlevel}
+    </select>
+
+    <select id="selectByPid" resultType="com.cxy.pojo.Departments">
+        select * from departments
+        where department_pid =#{departmentPId}
+    </select>
+
+    <insert id="addDepartment" keyProperty="departmentId" useGeneratedKeys="true">
+        insert into departments(department_name,department_pid,department_level,department_description)
+        values(#{departmentName},#{departmentPid},#{departmentLevel},#{departmentDescription})
+    </insert>
+
+    <update id="changePath">
+        update departments set department_path=#{departmentPath}
+        where department_id =#{departmentId}
+    </update>
+
+    <select id="selectById" resultType="com.cxy.pojo.Departments">
+        select * from departments
+        where department_id =#{departmentId}
+    </select>
+
+    <select id="getAllDepartments" resultType="com.cxy.pojo.Departments">
+        select * from departments
+    </select>
+
+    <delete id="deleteDoctorsByIds" parameterType="list">
+        delete from doctors where doctor_id in
+        <foreach collection="list" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+
+</mapper>

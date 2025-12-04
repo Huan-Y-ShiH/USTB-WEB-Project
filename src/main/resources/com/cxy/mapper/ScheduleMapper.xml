@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--  使用mapper接口
+  namespace : 与mapper接口同包同名
+-->
+<mapper namespace="com.cxy.mapper.ScheduleMapper">
+    <resultMap id="scheduleMap" type="com.cxy.pojo.Schedule" autoMapping="true">
+        <association property="doctors" javaType="com.cxy.pojo.Doctors" autoMapping="true"/>
+        <association property="departments" javaType="com.cxy.pojo.Departments" autoMapping="true"/>
+    </resultMap>
+
+
+    <!-- 根据编号查询员工信息
+        如果参数仅有一个,则#{名}参数名没有要求
+    -->
+    <select id="selectScheduleAll" resultMap="scheduleMap">
+        select *
+        from doctor_schedule ds left join doctors d on ds.doctor_id = d.doctor_id left join departments dp on ds.department_id = dp.department_id
+        <where>
+            <if test="departmentId!=null">
+                ds.department_id=#{departmentId}
+            </if>
+
+            <if test="date!=null">
+                and ds.date=#{date}
+            </if>
+        </where>
+        order by ds.schedule_id
+    </select>
+    <delete id="delSchedule" parameterType="integer">
+        delete from doctor_schedule where schedule_id = #{scheduleId}
+    </delete>
+    <select id="selectScheduleByParentId" resultMap="scheduleMap">
+        select *
+        from doctor_schedule ds left join doctors d on ds.doctor_id = d.doctor_id left join departments dp on ds.department_id = dp.department_id
+        <where>
+            <if test="departmentId!=null">
+                dp.department_pid=#{departmentId}
+            </if>
+        </where>
+        order by ds.schedule_id
+    </select>
+    <insert id="addSchedule" keyProperty="scheduleId" useGeneratedKeys="true">
+        insert into doctor_schedule(doctor_id,date,shift_time,department_id,is_available,visit_count,sum_count,remarks)
+        values (#{doctorId},#{date},#{shiftTime},#{departmentId},#{isAvailable},#{visitCount},#{sumCount},#{remarks})
+    </insert>
+    <select id="selectBookedShiftTimes" resultType="String">
+        SELECT shift_time FROM doctor_schedule
+        WHERE doctor_id = #{doctorId} AND date = #{date}
+    </select>
+
+    <delete id="delScheduleByDoctorId" parameterType="integer">
+        delete from doctor_schedule where doctor_id = #{doctorId}
+    </delete>
+
+    <delete id="delSchedulesByDoctorIds">
+        DELETE FROM doctor_schedule
+        WHERE doctor_id IN
+        <foreach collection="list" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 根据医生ID、日期和时段查询排班信息 -->
+    <select id="selectScheduleByDoctorAndTime" resultMap="scheduleMap">
+        SELECT *
+        FROM doctor_schedule ds 
+        LEFT JOIN doctors d ON ds.doctor_id = d.doctor_id 
+        LEFT JOIN departments dp ON ds.department_id = dp.department_id
+        WHERE ds.doctor_id = #{doctorId} 
+        AND ds.date = #{date} 
+        AND ds.shift_time = #{shiftTime}
+    </select>
+
+    <!-- 增加预约人数 -->
+    <update id="increaseVisitCount">
+        UPDATE doctor_schedule 
+        SET visit_count = visit_count + 1
+        WHERE doctor_id = #{doctorId} 
+        AND date = #{date} 
+        AND shift_time = #{shiftTime}
+        AND visit_count &lt; sum_count
+    </update>
+
+    <!-- 减少预约人数 -->
+    <update id="decreaseVisitCount">
+        UPDATE doctor_schedule 
+        SET visit_count = GREATEST(visit_count - 1, 0)
+        WHERE doctor_id = #{doctorId} 
+        AND date = #{date} 
+        AND shift_time = #{shiftTime}
+    </update>
+</mapper>

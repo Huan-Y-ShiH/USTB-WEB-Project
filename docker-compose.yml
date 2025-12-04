@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # openGauss数据库服务
+  opengauss:
+    image: enmotech/opengauss:3.0.0
+    container_name: hospital_opengauss
+    environment:
+      - GS_PASSWORD=Gauss@123
+      - GS_NODENAME=opengauss
+      - GS_USERNAME=gaussdb
+      - GS_DATABASE=hospital
+    ports:
+      - "5432:5432"
+    volumes:
+      - opengauss_data:/var/lib/opengauss/data
+    networks:
+      - hospital_network
+    healthcheck:
+      test: ["CMD-SHELL", "gsql -U gaussdb -d hospital -c 'SELECT 1;' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  # 数据库初始化服务（仅在首次启动时执行）
+  db-init:
+    image: enmotech/opengauss:3.0.0
+    container_name: hospital_db_init
+    environment:
+      - GS_PASSWORD=Gauss@123
+      - GS_USERNAME=gaussdb
+      - GS_DATABASE=hospital
+    volumes:
+      - ./init-db.sh:/init-db.sh:ro
+      - ./src/main/resources/db/hospital_opengauss.sql:/hospital_opengauss.sql:ro
+    networks:
+      - hospital_network
+    depends_on:
+      opengauss:
+        condition: service_healthy
+    command: /bin/bash -c "chmod +x /init-db.sh && /init-db.sh"
+    restart: "no"
+
+  # 医院管理系统应用服务
+  hospital-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hospital_app
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=opengauss
+      - DB_PORT=5432
+      - DB_NAME=hospital
+      - DB_USER=gaussdb
+      - DB_PASSWORD=Gauss@123
+    depends_on:
+      opengauss:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+    networks:
+      - hospital_network
+    restart: unless-stopped
+    volumes:
+      - ./src/main/webapp/upload:/usr/local/tomcat/webapps/ROOT/upload
+      - ./src/main/resources/jdbc.properties.docker:/usr/local/tomcat/webapps/ROOT/WEB-INF/classes/jdbc.properties
+
+volumes:
+  opengauss_data:
+    driver: local
+
+networks:
+  hospital_network:
+    driver: bridge
+

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.cxy.mapper.ConsultationMapper">
+
+    <!-- resultMap 定义查询结果 -->
+    <resultMap id="consultationMap" type="com.cxy.pojo.Consultation" autoMapping="true">
+        <id property="consultationId" column="consultation_id"/>
+        <result property="patientId" column="patient_id"/>
+        <result property="doctorId" column="doctor_id"/>
+        <result property="consultationTime" column="consultation_time"/>
+        <result property="isHospitalRegistered" column="is_hospital_registered"/>
+        <result property="isHospitalized" column="is_hospitalized"/>
+        <result property="medicalAdviceCase" column="medical_advice_case"/>
+        
+        <!-- 关联患者信息 -->
+        <association property="patient" javaType="com.cxy.pojo.Patients">
+            <id property="patientId" column="patient_id"/>
+            <result property="pname" column="patient_name"/>
+            <result property="phone" column="patient_phone"/>
+            <result property="idCardNumber" column="patient_id_card"/>
+        </association>
+        
+        <!-- 关联医生信息 -->
+        <association property="doctor" javaType="com.cxy.pojo.Doctors">
+            <id property="doctorId" column="doctor_id"/>
+            <result property="name" column="doctor_name"/>
+            <result property="jobNumber" column="doctor_job_number"/>
+        </association>
+    </resultMap>
+
+    <!-- 根据医生ID查询咨询记录 -->
+    <select id="selectConsultationsByDoctorId" resultMap="consultationMap">
+        select c.*, 
+               p.pname as patient_name, p.phone as patient_phone, p.id_card_number as patient_id_card,
+               d.name as doctor_name, d.job_number as doctor_job_number
+        from consultation c 
+        left join patients p on c.patient_id = p.patient_id
+        left join doctors d on c.doctor_id = d.doctor_id
+        where c.doctor_id = #{doctorId}
+        order by c.consultation_time desc
+    </select>
+
+    <!-- 根据医生ID和时间范围查询咨询记录 -->
+    <select id="selectConsultationsByDoctorIdAndDate" resultMap="consultationMap">
+        select c.*, 
+               p.pname as patient_name, p.phone as patient_phone, p.id_card_number as patient_id_card,
+               d.name as doctor_name, d.job_number as doctor_job_number
+        from consultation c 
+        left join patients p on c.patient_id = p.patient_id
+        left join doctors d on c.doctor_id = d.doctor_id
+        where c.doctor_id = #{doctorId}
+        <if test="startDate != null">
+            and c.consultation_time >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            and c.consultation_time &lt;= #{endDate}
+        </if>
+        order by c.consultation_time desc
+    </select>
+
+    <!-- 根据咨询ID查询咨询详情 -->
+    <select id="selectConsultationById" resultMap="consultationMap">
+        select c.*, 
+               p.pname as patient_name, p.phone as patient_phone, p.id_card_number as patient_id_card,
+               d.name as doctor_name, d.job_number as doctor_job_number
+        from consultation c 
+        left join patients p on c.patient_id = p.patient_id
+        left join doctors d on c.doctor_id = d.doctor_id
+        where c.consultation_id = #{consultationId}
+    </select>
+
+    <!-- 添加咨询记录 -->
+    <insert id="insertConsultation" parameterType="com.cxy.pojo.Consultation">
+        insert into consultation 
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="consultationId != null">consultation_id,</if>
+            patient_id,
+            doctor_id,
+            consultation_time,
+            is_hospital_registered,
+            is_hospitalized,
+            medical_advice_case,
+        </trim>
+        values 
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="consultationId != null">#{consultationId},</if>
+            #{patientId},
+            #{doctorId},
+            #{consultationTime},
+            #{isHospitalRegistered},
+            #{isHospitalized},
+            #{medicalAdviceCase},
+        </trim>
+    </insert>
+
+    <!-- 更新咨询记录 -->
+    <update id="updateConsultation" parameterType="com.cxy.pojo.Consultation">
+        update consultation 
+        set medical_advice_case = #{medicalAdviceCase},
+            is_hospital_registered = #{isHospitalRegistered},
+            is_hospitalized = #{isHospitalized}
+        where consultation_id = #{consultationId}
+    </update>
+
+    <!-- 根据患者ID查询咨询记录 -->
+    <select id="selectConsultationsByPatientId" resultMap="consultationMap">
+        select c.*, 
+               p.pname as patient_name, p.phone as patient_phone, p.id_card_number as patient_id_card,
+               d.name as doctor_name, d.job_number as doctor_job_number
+        from consultation c 
+        left join patients p on c.patient_id = p.patient_id
+        left join doctors d on c.doctor_id = d.doctor_id
+        where c.patient_id = #{patientId}
+        order by c.consultation_time desc
+    </select>
+
+    <!-- 删除咨询记录 -->
+    <delete id="deleteConsultation">
+        delete from consultation where consultation_id = #{consultationId}
+    </delete>
+
+    <!-- 获取当前最大的咨询记录ID -->
+    <select id="getMaxConsultationId" resultType="java.lang.Integer">
+        select COALESCE(MAX(consultation_id), 0) from consultation
+    </select>
+
+</mapper> 

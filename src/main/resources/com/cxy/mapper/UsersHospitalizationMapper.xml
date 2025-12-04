@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--   使用mapper接口
+  namespace : 与mapper接口同包同名
+ -->
+<mapper namespace="com.cxy.mapper.UsersHospitalizationMapper">
+    <!--  根据编号查询员工信息
+        如果参数仅有一个,则#{名}参数名没有要求
+     -->
+    <resultMap id="hospitalizationMap" type="com.cxy.pojo.Hospitalization" autoMapping="true">
+        <id property="hospitalizationId" column="hospitalization_id"/>
+        <result property="patientId" column="patient_id"/>
+        <result property="roomNumber" column="room_number"/>
+        <result property="cost" column="cost"/>
+        <result property="paymentStatus" column="payment_status"/>
+        <result property="isInsured" column="is_insured"/>
+        <result property="hospitalizationStatus" column="hospitalization_status"/>
+        <association property="patient" javaType="com.cxy.pojo.Patients">
+            <id property="patientId" column="patient_id"/>
+            <result property="pname" column="patient_pname"/>
+            <result property="phone" column="patient_phone"/>
+            <result property="idCardNumber" column="patient_id_card_number"/>
+            <result property="gender" column="gender"/>
+            <result property="age" column="age"/>
+        </association>
+    </resultMap>
+
+    <!-- 查询所有可预约住院信息 -->
+    <select id="selectAvailableHospitalizations" resultMap="hospitalizationMap">
+        select * from hospitalization
+        where (hospitalization_status is null or hospitalization_status = 'in_progress')
+          and patient_id is null
+    </select>
+
+    <!-- 用户预约住院（更新patient_id和状态） -->
+    <update id="reserveHospitalization">
+        update hospitalization
+        set patient_id = #{patientId}, hospitalization_status = 'in_progress'
+        where hospitalization_id = #{hospitalizationId} and patient_id is null
+    </update>
+
+    <!-- 查询我的住院信息 -->
+    <select id="selectMyHospitalizations" resultMap="hospitalizationMap">
+        SELECT 
+            h.*,
+            p.pname as patient_pname,
+            p.phone as patient_phone,
+            p.id_card_number as patient_id_card_number
+        FROM hospitalization h
+        LEFT JOIN patients p ON h.patient_id = p.patient_id
+        WHERE h.patient_id = #{patientId}
+    </select>
+
+    <!-- 取消预约（将patient_id置为NULL，状态设为cancelled） -->
+    <update id="cancelHospitalization">
+        update hospitalization
+        set patient_id = null, hospitalization_status = 'cancelled'
+        where hospitalization_id = #{hospitalizationId}
+    </update>
+    
+    <!-- 搜索住院信息的SQL片段 -->
+    <sql id="searchHospitalizationWhere">
+        <where>
+            h.patient_id = #{patientId}
+            <if test="roomNumber != null and roomNumber != ''">
+                AND h.room_number LIKE CONCAT('%', #{roomNumber}, '%')
+            </if>
+            <if test="hospitalizationStatus != null and hospitalizationStatus != ''">
+                AND h.hospitalization_status = #{hospitalizationStatus}
+            </if>
+            <if test="paymentStatus != null and paymentStatus != ''">
+                AND h.payment_status = #{paymentStatus}
+            </if>
+            <if test="isInsured != null and isInsured != ''">
+                AND h.is_insured = #{isInsured}
+            </if>
+            <if test="minCost != null and minCost != ''">
+                AND h.cost >= #{minCost}
+            </if>
+            <if test="maxCost != null and maxCost != ''">
+                AND h.cost &lt;= #{maxCost}
+            </if>
+        </where>
+    </sql>
+    
+    <!-- 搜索住院信息（支持条件查询和分页） -->
+    <select id="searchHospitalizations" resultMap="hospitalizationMap">
+        SELECT 
+            h.*,
+            p.pname as patient_pname,
+            p.phone as patient_phone,
+            p.id_card_number as patient_id_card_number
+        FROM hospitalization h
+        LEFT JOIN patients p ON h.patient_id = p.patient_id
+        <include refid="searchHospitalizationWhere"/>
+        ORDER BY h.hospitalization_id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+    
+    <!-- 获取住院信息总数 -->
+    <select id="getHospitalizationCount" resultType="int">
+        SELECT COUNT(*)
+        FROM hospitalization h
+        LEFT JOIN patients p ON h.patient_id = p.patient_id
+        <include refid="searchHospitalizationWhere"/>
+    </select>
+    
+    <!-- 获取住院信息详情 -->
+    <select id="getHospitalizationDetail" resultMap="hospitalizationMap">
+        SELECT 
+            h.*,
+            p.pname as patient_pname,
+            p.phone as patient_phone,
+            p.id_card_number as patient_id_card_number,
+            p.gender,
+            p.age
+        FROM hospitalization h
+        LEFT JOIN patients p ON h.patient_id = p.patient_id
+        WHERE h.hospitalization_id = #{hospitalizationId} AND h.patient_id = #{patientId}
+    </select>
+
+</mapper>

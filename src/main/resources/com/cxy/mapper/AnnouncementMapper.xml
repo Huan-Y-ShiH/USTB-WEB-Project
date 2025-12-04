@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--   使用mapper接口
+  namespace : 与mapper接口同包同名
+ -->
+<mapper namespace="com.cxy.mapper.AnnouncementMapper">
+
+    <select id="getAllAnnouncements" resultType="com.cxy.pojo.Announcement">
+        SELECT * FROM announcement ORDER BY creation_time ASC
+    </select>
+
+    <insert id="addAnnouncement" parameterType="com.cxy.pojo.Announcement"
+            useGeneratedKeys="true" keyProperty="announcementId">
+        INSERT INTO announcement(title, imgurl, content, creation_time, creator)
+        VALUES (#{title}, #{imgUrl}, #{content}, #{creationTime}, #{creator})
+    </insert>
+
+    <delete id="deleteAnnouncementById">
+        DELETE FROM announcement WHERE announcement_id = #{id}
+    </delete>
+
+</mapper>

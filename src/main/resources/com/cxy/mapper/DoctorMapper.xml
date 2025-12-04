@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--   使用mapper接口
+  namespace : 与mapper接口同包同名
+ -->
+<mapper namespace="com.cxy.mapper.DoctorMapper">
+    <!--  根据编号查询员工信息
+        如果参数仅有一个,则#{名}参数名没有要求
+     -->
+    <resultMap id="doctorMap" type="com.cxy.pojo.Doctors" autoMapping="true" >
+        <association property="departments" javaType="com.cxy.pojo.Departments" autoMapping="true"/>
+
+        <association property="titles" javaType="com.cxy.pojo.ProfessionalTitles" autoMapping="true"/>
+    </resultMap>
+
+    <select id="selectDoctorAll" resultMap="doctorMap">
+        select d.* ,dt.* ,pt.*
+        from doctors d left join departments dt on d.department_id =dt.department_id left join professional_titles pt on d.professional_title_id=pt.id
+        <where>
+            <if test="departmentId!=null">
+                d.department_id =#{departmentId}
+            </if>
+        <if test="titleId!=null">
+            and d.professional_title_id =#{titleId}
+        </if>
+        <if test="doctorName!=null">
+            and d.name like concat('%',#{doctorName},'%')
+        </if>
+        <if test="jobNumber!=null">
+            and d.job_number like concat('%',#{jobNumber},'%')
+        </if>
+        </where>
+        order by d.doctor_id
+    </select>
+
+    <insert id="addDoctor" keyProperty="doctorId" useGeneratedKeys="true">
+        insert into doctors(job_number,password,name,avatar,phone,email,introduction,registration_fee,entry_date,department_id,professional_title_id)
+        values(#{jobNumber},#{password},#{name},#{avatar},#{phone},#{email},#{introduction},#{registrationFee},#{entryDate},#{departmentId},#{professionalTitleId})
+    </insert>
+
+    <delete id="deleteDoctor" parameterType="String">
+        delete from doctors where name =#{name}
+    </delete>
+
+    <update id="updateDoctor" parameterType="com.cxy.pojo.Doctors">
+        UPDATE doctors
+        SET
+        password = #{password},
+        <if test="avatar != null">avatar = #{avatar},</if>
+        phone = #{phone},
+        email = #{email},
+        introduction = #{introduction},
+        registration_fee = #{registrationFee},
+        department_id = #{departmentId},
+        professional_title_id = #{professionalTitleId}
+        WHERE name = #{name}
+    </update>
+
+    <select id="getDoctorByName" resultMap="doctorMap" parameterType="String">
+        select d.*, dt.*, pt.*
+        from doctors d
+                 left join departments dt on d.department_id = dt.department_id
+                 left join professional_titles pt on d.professional_title_id = pt.id
+        where d.name = #{name}
+    </select>
+
+    <delete id="deleteDoctorsByIds" parameterType="list">
+        delete from doctors
+        where doctor_id in
+        <foreach collection="list" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="selectDoctorsByDepartmentId" resultType="com.cxy.pojo.Doctors">
+        SELECT * FROM doctors WHERE department_id = #{departmentId}
+    </select>
+
+    <delete id="deleteDoctors">
+        DELETE FROM doctors
+        WHERE doctor_id IN
+        <foreach collection="list" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>
+

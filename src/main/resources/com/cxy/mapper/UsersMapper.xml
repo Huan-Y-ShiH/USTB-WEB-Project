@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--   使用mapper接口
+  namespace : 与mapper接口同包同名
+ -->
+<mapper namespace="com.cxy.mapper.UsersMapper">
+    <!--  根据编号查询员工信息
+        如果参数仅有一个,则#{名}参数名没有要求
+     -->
+    <!--resultMap 定义查询结果-->
+    <resultMap id="patientMap" type="com.cxy.pojo.Patients" autoMapping="true">
+        <id property="patientId" column="patient_id"/>
+        <result property="idCardNumber" column="id_card_number"/>
+        <result property="pname" column="pname"/>
+        <result property="avatar" column="avatar"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="balance" column="balance"/>
+    </resultMap>
+
+    <!-- 修改患者个人信息 -->
+    <update id="updatePatientInfo" parameterType="com.cxy.pojo.Patients">
+        update patients
+        set pname = #{pname}, phone = #{phone}, email = #{email}
+        where patient_id = #{patientId}
+    </update>
+
+    <!-- 用户登录（通过手机号和密码） -->
+    <select id="selectByPhoneAndPassword" resultMap="patientMap">
+        select * from patients where phone = #{phone} and password = #{password}
+    </select>
+
+    <!-- 用户注册 -->
+    <insert id="insertPatient" parameterType="com.cxy.pojo.Patients" useGeneratedKeys="true" keyProperty="patientId">
+        insert into patients (id_card_number, password, pname, avatar, phone, email, balance, registration_date)
+        values (#{idCardNumber}, #{password}, #{pname}, #{avatar}, #{phone}, #{email}, #{balance}, #{registrationDate})
+    </insert>
+
+    <!-- 根据ID查询患者信息 -->
+    <select id="getPatientById" resultMap="patientMap">
+        select * from patients where patient_id = #{patientId}
+    </select>
+</mapper>
