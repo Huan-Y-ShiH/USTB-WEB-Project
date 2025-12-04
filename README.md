@@ -196,7 +196,7 @@ docker exec -i hospital_opengauss gsql -U gaussdb -d hospital < src/main/resourc
 
 ## 👥 作者
 
-USTB Web项目团队
+陈翔宇 
 
 ## 📞 联系方式
 
